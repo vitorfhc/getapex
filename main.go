@@ -6,9 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"net/url"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
-	"net/url"
 )
 
 func main() {
@@ -17,25 +18,28 @@ func main() {
 	for scanner.Scan() {
 		inputURL := scanner.Text()
 
+		if inputURL == "" {
+			continue
+		}
+
 		if !strings.HasPrefix(inputURL, "http://") && !strings.HasPrefix(inputURL, "https://") {
 			inputURL = "https://" + inputURL
 		}
 
 		parsedURL, err := url.Parse(inputURL)
 		if err != nil {
-			logrus.Error("failed to parse URL: ", err)
-			panic(err)
+			logrus.Warnf("failed to parse URL %s: %v", inputURL, err)
 		}
 
 		host := parsedURL.Hostname()
 
 		apexDomain, err := publicsuffix.EffectiveTLDPlusOne(host)
 		if err != nil {
-			logrus.Error("failed to extract apex domain: ", err)
-			panic(err)
+			logrus.Warnf("failed to get apex domain for %s: %v", host, err)
 		}
 
-		fmt.Println(apexDomain)
+		lowerApexDomain := strings.ToLower(apexDomain)
+		fmt.Println(lowerApexDomain)
 	}
 
 	if err := scanner.Err(); err != nil {
